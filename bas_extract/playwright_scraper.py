@@ -226,8 +226,8 @@ async def process_pagination(page, view_bill_links_selector, municipality_slug: 
 async def fetch_collection(page, base_url:str, collection_label:str, municipality_slug:str, do_snapshot:bool):
     await page.goto(base_url, wait_until="domcontentloaded")
     print("sleep 5. 500 ms")
-    await sleep_ms(500)
-
+    await sleep_ms(3000)
+    
     # Select the collection if there's a dropdown
     select = page.locator("select").first
     if await select.count() > 0:
@@ -244,24 +244,33 @@ async def fetch_collection(page, base_url:str, collection_label:str, municipalit
     await sleep_ms(600)
 
     # Find the address input field - try multiple selectors
-    address_input = page.locator("input[placeholder*='Address']")
+    address_input = page.locator("input[placeholder*='txtPropertyAd']")
     if await address_input.count() == 0:
-        address_input = page.get_by_label(re.compile("Address", re.I))
+        print("first address input not found ")
+        address_input = page.get_by_label(re.compile("txtPropertyAd", re.I))
     if await address_input.count() == 0:
-        address_input = page.locator("input[name*='address']")
+        print("2nd address input not found ")
+        address_input = page.locator("input[name*='txtPropertyAd']")
     if await address_input.count() == 0:
-        address_input = page.locator("input[id*='address']")
+        print("3rd address input not found ")   
+        address_input = page.locator("input[id*='txtPropertyAd']")
     if await address_input.count() == 0:
+        print("4th address input not found ")
         # Try to find any text input that might be for address
-        address_input = page.locator("input[type='text']").first
-
+        address_input = page.locator("input[type='text'][id='txtPropertyAd']")
+        
     print(f"Found {await address_input.count()} address input field(s)")
 
     # Find the search button
     search_btn = page.get_by_role("button", name=re.compile("search", re.I))
     if await search_btn.count() == 0:
-        search_btn = page.locator("input[type=submit]").filter(has_text=re.compile("search", re.I))
+        print("first search button not found ")
+        search_btn = page.locator("input[type=submit]")
     if await search_btn.count() == 0:
+        print("2nd search button not found ")
+        search_btn = page.locator("input[type=image][id=btnSearch]")
+    if await search_btn.count() == 0:
+        print("3rd search button not found ")
         search_btn = page.locator("button").filter(has_text=re.compile("search", re.I))
 
     all_records = []
@@ -271,10 +280,10 @@ async def fetch_collection(page, base_url:str, collection_label:str, municipalit
     search_terms = []
 
     # Add numeric addresses: 1-999
-    search_terms.extend([str(i) for i in range(1, 1000)])
+    search_terms.extend([str(i) for i in range(1, 9)])
 
     # Add alphabetic addresses: A-Z
-    search_terms.extend([chr(i) for i in range(ord('A'), ord('Z') + 1)])
+    #search_terms.extend([chr(i) for i in range(ord('A'), ord('Z') + 1)])
 
     print(f"Starting comprehensive search with {len(search_terms)} search terms for {municipality_slug} {collection_label}")
 
@@ -288,55 +297,40 @@ async def fetch_collection(page, base_url:str, collection_label:str, municipalit
 
             # Clear and fill the address field
             if await address_input.count() > 0:
+                print(f"Filling address input with: {address_num}")
                 await address_input.first.clear()
                 await address_input.first.fill(str(address_num))
                 print("sleep 7. 100 ms")
                 await sleep_ms(100)
-
+     
                 # Click search button
                 if await search_btn.count() > 0:
                     await search_btn.first.click()
                     await page.wait_for_load_state("networkidle")
-                    print("sleep 8. 200 ms")
-                    await sleep_ms(200)
+                    print("sleep 8. 500 ms")
+                    await sleep_ms(500)
                 else:
                     # Try pressing Enter if no search button
                     await address_input.first.press("Enter")
                     await page.wait_for_load_state("networkidle")
-                    print("sleep 9. 200 ms")
-                    await sleep_ms(200)
+                    print("sleep 9. 500 ms")
+                    await sleep_ms(500)
 
                 # Check if we're on a bill detail page OR a search results page
                 page_title = await page.title()
+                print(f"Page title after search: {page_title}")
 
-                if "View Bill" in page_title:
-                    # We're on a bill detail page - extract data from this single bill
-                    record, is_unpaid = await extract_bill_data_from_current_page(
-                        page, municipality_slug, collection_label, str(address_num), ts
-                    )
-
-                    # Add ALL records (both paid and unpaid) to the dataset
-                    all_records.append(record)
-
-                    if is_unpaid:
-                        print(f"Found UNPAID record for {municipality_slug}: {record.get('owner_name', 'Unknown')} - Amount due: {record.get('amount_due', 'Unknown')}")
-                    else:
-                        print(f"Found PAID record for {municipality_slug}: {record.get('owner_name', 'Unknown')} - Status: {record.get('payment_type', 'Paid')}")
-
-                else:
+                if "Search Results" in page_title:
                     # We might be on a search results page with multiple properties
                     # Save a snapshot for debugging if this is the first search
-                    if address_num == 1 and do_snapshot:
-                        snap_path = await save_snapshot(page)
-                        print(f"Saved snapshot of search results to: {snap_path}")
-
+                    print(f"On search results page for address {address_num}")
                     # Look for "view bill" links or property list on this page
                     view_bill_links = page.locator("a").filter(has_text=re.compile("view bill", re.I))
                     link_count = await view_bill_links.count()
 
                     if link_count > 0:
                         print(f"Found {link_count} 'view bill' links for address {address_num}")
-
+                        #link_count = 3
                         # Process each view bill link
                         for i in range(link_count):
                             try:
@@ -391,7 +385,7 @@ async def fetch_collection(page, base_url:str, collection_label:str, municipalit
 
                 # Navigate back to the main search page for next address search
                 await page.goto(base_url, wait_until="domcontentloaded")
-                print("sleep 12. 500 ms")
+                print("sleep 12. 200 ms")
                 await sleep_ms(200)
 
                 # Re-select collection if needed
@@ -441,6 +435,9 @@ async def run_for_municipality(browser, muni, collections, do_snapshot):
 async def main(target_slugs):
     from .municipalities import MUNICIPALITIES
     do_snapshot = os.getenv("BAS_SNAPSHOT_HTML","false").lower() == "true"
+    
+    print(f"HTML snapshotting is ENABLED {do_snapshot}")
+        
     results = []
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(headless=True)

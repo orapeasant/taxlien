@@ -1,5 +1,7 @@
 import asyncio, os
 from bas_extract.playwright_scraper import main
+from dotenv import load_dotenv
+load_dotenv()
 
 #TARGETS = ["albion","altona","amenia","amherst","amityville","cliftonpark"]
 TARGETS = ["cliftonpark"]
