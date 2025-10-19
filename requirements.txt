@@ -1,0 +1,14 @@
+# Tax Lien Scraper Dependencies
+
+# Web scraping and browser automation
+playwright>=1.55.0
+
+# Data processing and Excel export
+pandas>=2.3.0
+openpyxl>=3.1.0
+
+# Date and time utilities (included with Python but listed for clarity)
+python-dateutil>=2.8.2
+
+# Optional: Database support (uncomment if needed)
+# psycopg2-binary>=2.9.0
