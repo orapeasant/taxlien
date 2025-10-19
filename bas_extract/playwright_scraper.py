@@ -290,21 +290,21 @@ async def fetch_collection(page, base_url:str, collection_label:str, municipalit
             if await address_input.count() > 0:
                 await address_input.first.clear()
                 await address_input.first.fill(str(address_num))
-                print("sleep 7. 500 ms")
+                print("sleep 7. 100 ms")
                 await sleep_ms(100)
 
                 # Click search button
                 if await search_btn.count() > 0:
                     await search_btn.first.click()
                     await page.wait_for_load_state("networkidle")
-                    print("sleep 8 500 ms")
-                    await sleep_ms(500)
+                    print("sleep 8. 200 ms")
+                    await sleep_ms(200)
                 else:
                     # Try pressing Enter if no search button
                     await address_input.first.press("Enter")
                     await page.wait_for_load_state("networkidle")
-                    print("sleep 9 500 ms")
-                    await sleep_ms(500)
+                    print("sleep 9. 200 ms")
+                    await sleep_ms(200)
 
                 # Check if we're on a bill detail page OR a search results page
                 page_title = await page.title()
@@ -391,8 +391,8 @@ async def fetch_collection(page, base_url:str, collection_label:str, municipalit
 
                 # Navigate back to the main search page for next address search
                 await page.goto(base_url, wait_until="domcontentloaded")
-                print("sleep 12 500 ms")
-                await sleep_ms(500)
+                print("sleep 12. 500 ms")
+                await sleep_ms(200)
 
                 # Re-select collection if needed
                 select = page.locator("select").first
